@@ -1,0 +1,163 @@
+import React, { useState, useEffect } from 'react';
+import { LandingPage } from './components/auth/LandingPage';
+import { ChatApp } from './components/chat/ChatApp';
+import { createAnonymousUser } from './services/authService';
+import { COLORS } from './constants/colors';
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check for existing session
+    try {
+      const savedUser = sessionStorage.getItem('mhc_user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (error) {
+      console.error('Error restoring session:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    // Save session
+    try {
+      sessionStorage.setItem('mhc_user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error saving session:', error);
+    }
+  };
+
+  const handleAnonymous = () => {
+    const anonymousUser = createAnonymousUser();
+    setUser(anonymousUser);
+    // Don't save anonymous to sessionStorage
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    try {
+      sessionStorage.removeItem('mhc_user');
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
+    // Cancel any ongoing speech
+    window.speechSynthesis?.cancel();
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(160deg, #0A0F1A 0%, #1A2634 50%, #0A1520 100%)',
+        color: COLORS.text.secondary
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: 48,
+            marginBottom: 16,
+            animation: 'float 2s ease infinite'
+          }}>
+            🕊️
+          </div>
+          <div>Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <style>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.2; }
+          50% { opacity: 0.9; }
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes typingPulse {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(170, 200, 220, 0.2);
+          border-radius: 4px;
+        }
+        * {
+          box-sizing: border-box;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Georgia', 'Times New Roman', serif;
+        }
+        input, textarea, button {
+          font-family: inherit;
+        }
+      `}</style>
+      
+      {!user ? (
+        <LandingPage 
+          onAnonymous={handleAnonymous} 
+          onLogin={handleLogin} 
+        />
+      ) : (
+        <ChatApp 
+          user={user} 
+          onLogout={handleLogout} 
+        />
+      )}
+    </>
+  );
+}
+
+export default App;
